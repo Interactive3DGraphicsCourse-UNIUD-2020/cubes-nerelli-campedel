@@ -1,4 +1,4 @@
-# Modeling and rendering with cubes
+# Campedel - Nerelli | Modeling and rendering with cubes
 
 ![Image from Minecraft](https://jordanweagly.files.wordpress.com/2012/02/figure_4.png)
 
