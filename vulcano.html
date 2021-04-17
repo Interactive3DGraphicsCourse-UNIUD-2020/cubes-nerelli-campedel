@@ -11,13 +11,22 @@
 	<script src="lib/MTLLoader.js"></script>
 	<script src="lib/SPE.min.js"></script>
 
+	<style>
+		p {
+			margin: 5px;
+			padding-left: 200px;
+		}
+	</style>
+
 </head>
 
 <body style='margin: 0px'>
+	<p id="timeFromPrevious" color="white"></p>
+	<p id="timeFromPreviousToNext" color="white"></p>
 
 	<script>
 
-		let scene, camera, renderer, controls, stats, clock, vulcano;
+		let scene, camera, renderer, controls, stats, clock, vulcano, hemiLight;
 		// Used in initParticles()
 		let emitter, particleGroup;
 
@@ -39,7 +48,7 @@
 			// renderer.shadowMap.enabled = true;
 			camera.position.set(2, 2, 2);
 
-			let hemiLight = new THREE.HemisphereLight(0xff0000, 0x110101, 0.5);
+			hemiLight = new THREE.HemisphereLight(0xff0000, 0x110101, 0.5);
 			hemiLight.position.set(0, 128, 0);
 			scene.add(hemiLight);
 
@@ -142,8 +151,50 @@
 
 		}
 
+		// Lightning variables
+		let maxInterval = 5,
+			lightIntensity = 10;
+		let initTime = Date.now();
+		let time,
+			interval,
+			timeNext = getRandomBetweenTwoNumbers(3, 5);
+		document.getElementById("timeFromPreviousToNext").innerHTML = "Time to the next lightning: " + timeNext;
+
+		function getRandomBetweenTwoNumbers(min, max) {
+			min = Math.ceil(min);
+  			max = Math.floor(max);
+  			return Math.floor(Math.random() * (max - min + 1)) + min;
+		}
+
 		function animate() {
 			requestAnimationFrame(animate);
+			time = Date.now();
+			interval = time - initTime;
+			document.getElementById("timeFromPrevious").innerHTML = "Time since the last lightning: " + interval / 1000;
+			if(Math.floor(interval / 1000) == timeNext) {
+				hemiLight.intensity = lightIntensity;
+				scene.position.x = .1;
+				scene.position.z = -.1;
+				setTimeout(function() {
+					hemiLight.intensity = 1;
+					scene.position.x = 0;
+					scene.position.z = 0;
+					if(getRandomBetweenTwoNumbers(0, 1))
+						setTimeout(function() {
+							hemiLight.intensity = lightIntensity;
+							scene.position.x = -.1;
+							scene.position.z = .1;
+							setTimeout(function() {
+								hemiLight.intensity = 1;
+								scene.position.x = 0;
+								scene.position.z = 0;
+							}, 100);
+						}, 50);
+				}, 100);
+				timeNext = getRandomBetweenTwoNumbers(3, maxInterval);
+				document.getElementById("timeFromPreviousToNext").innerHTML = "Time from the previuos to the next lightning: " + timeNext;
+				initTime = time;
+			}
 			Render(clock.getDelta());
 			stats.update();
 		}
