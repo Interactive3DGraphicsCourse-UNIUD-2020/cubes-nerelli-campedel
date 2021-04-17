@@ -19,7 +19,6 @@
 	<script src="lib/stats.min.js"></script>
 	<script src="lib/Coordinates.js"></script>
 	<script src="lib/OrbitControls.js"></script>
-	<script src="lib/OBJLoader.js"></script>
 </head>
 
 <body>
@@ -76,18 +75,6 @@
 			dirLight.shadow.mapSize.width = 1024;
 			dirLight.shadow.mapSize.height = 1024;
 
-
-			// instantiate a loader
-			var vulcano = new THREE.OBJLoader();
-			// load a resource
-			vulcano.load(
-				// resource URL
-				'vulcano.obj',
-				// Function when resource is loaded
-				function (object) {
-					scene.add(object);
-				}
-			);
 
 			// GROUND
 			var groundGeo = new THREE.PlaneBufferGeometry( 15, 15 );
