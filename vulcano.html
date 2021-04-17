@@ -21,8 +21,6 @@
 </head>
 
 <body style='margin: 0px'>
-	<p id="timeFromPrevious" color="white"></p>
-	<p id="timeFromPreviousToNext" color="white"></p>
 
 	<script>
 
@@ -158,7 +156,6 @@
 		let time,
 			interval,
 			timeNext = getRandomBetweenTwoNumbers(3, 5);
-		document.getElementById("timeFromPreviousToNext").innerHTML = "Time to the next lightning: " + timeNext;
 
 		function getRandomBetweenTwoNumbers(min, max) {
 			min = Math.ceil(min);
@@ -170,7 +167,6 @@
 			requestAnimationFrame(animate);
 			time = Date.now();
 			interval = time - initTime;
-			document.getElementById("timeFromPrevious").innerHTML = "Time since the last lightning: " + interval / 1000;
 			if(Math.floor(interval / 1000) == timeNext) {
 				hemiLight.intensity = lightIntensity;
 				scene.position.x = .1;
@@ -192,7 +188,6 @@
 						}, 50);
 				}, 100);
 				timeNext = getRandomBetweenTwoNumbers(3, maxInterval);
-				document.getElementById("timeFromPreviousToNext").innerHTML = "Time from the previuos to the next lightning: " + timeNext;
 				initTime = time;
 			}
 			Render(clock.getDelta());
