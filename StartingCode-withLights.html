@@ -15,11 +15,14 @@
 			height: 100%;
 		}
 	</style>
+
 	<script src="lib/three.min.js"></script>
 	<script src="lib/stats.min.js"></script>
 	<script src="lib/Coordinates.js"></script>
 	<script src="lib/OrbitControls.js"></script>
 	<script src="lib/OBJLoader.js"></script>
+	<script src="lib/MTLLoader.js"></script>
+
 </head>
 
 <body>
@@ -29,7 +32,7 @@
 		var scene, camera, renderer, controls, stats;
 		var viewHeight = 10;
 		var aspectRatio = window.innerWidth / window.innerHeight;
-
+		var vulcano;
 
 		function Start() {
 			scene = new THREE.Scene();
@@ -76,29 +79,30 @@
 			dirLight.shadow.mapSize.width = 1024;
 			dirLight.shadow.mapSize.height = 1024;
 
+			var OBJFile = 'obj/vulcano.obj';
+			var MTLFile = 'obj/vulcano.mtl';
+			var PNGFile = 'obj/vulcano.png';
 
-			// instantiate a loader
-			var vulcano = new THREE.OBJLoader();
-			// load a resource
-			vulcano.load(
-				// resource URL
-				'obj/vulcano.obj',
-				// Function when resource is loaded
-				function (object) {
-					scene.add(object);
-				}
-			);
+			new THREE.MTLLoader()
+				.load(MTLFile, function (materials) {
+					materials.preload();
+					new THREE.OBJLoader()
+						.setMaterials(materials)
+						.load(OBJFile, function (object) {
+							object.position.y = 0;
+							var texture = new THREE.TextureLoader().load(PNGFile);
 
-			const mtlLoader = new MTLLoader();
-			mtlLoader.load("model.mtl", mtlParseResult => {
-				const materials = MtlObjBridge.addMaterialsFromMtlLoader(mtlParseResult);
-				const objLoader = new OBJLoader2();
-				objLoader.addMaterials(materials);
-				objLoader.load("obj/vulcano.obj", obj => scene.add(obj));
-			});
+							object.traverse(function (child) {   // aka setTexture
+								if (child instanceof THREE.Mesh) {
+									child.material.map = texture;
+								}
+							});
+							scene.add(object);
+						});
+				});
 
 			// GROUND
-			var groundGeo = new THREE.PlaneBufferGeometry(10000, 10000);
+			var groundGeo = new THREE.PlaneBufferGeometry(15, 15);
 			var groundMat = new THREE.MeshPhongMaterial({ color: 0xffffff, specular: 0x050505 });
 			groundMat.color.setHSL(0.095, 1, 0.75);
 			var ground = new THREE.Mesh(groundGeo, groundMat);
