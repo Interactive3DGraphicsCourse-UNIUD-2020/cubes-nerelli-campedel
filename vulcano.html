@@ -5,10 +5,7 @@
 
 	<script src="lib/three.min.js"></script>
 	<script src="lib/stats.min.js"></script>
-	<script src="lib/Coordinates.js"></script>
 	<script src="lib/OrbitControls.js"></script>
-	<script src="lib/OBJLoader.js"></script>
-	<script src="lib/MTLLoader.js"></script>
 	<script src="lib/SPE.min.js"></script>
 
 	<style>
@@ -24,74 +21,156 @@
 
 	<script>
 
-		let scene, camera, renderer, controls, stats, clock, vulcano, hemiLight;
+		let scene, group, camera, renderer, controls, stats, clock, vulcano, hemiLight, dirLight, light;
+		dirLight = new THREE.DirectionalLight(0xffffff, 1);
+
 		// Used in initParticles()
 		let emitter, particleGroup;
 
-		//variables for ortographic camera
+		//return array with height data from img, taken from: http://danni-three.blogspot.it/2013/09/threejs-heightmaps.html
+		function getHeightData(img, scale) {
+
+			if (scale == undefined) scale = 1;
+
+			let canvas = document.createElement('canvas');
+			canvas.width = img.width;
+			canvas.height = img.height;
+			let context = canvas.getContext('2d');
+
+			let size = img.width * img.height;
+			console.log(size);
+			let data = new Float32Array(size);
+
+			context.drawImage(img, 0, 0);
+
+			for (let i = 0; i < size; i++) {
+				data[i] = 0;
+			}
+
+			let imgd = context.getImageData(0, 0, img.width, img.height);
+			let pix = imgd.data;
+
+			let j = 0;
+			for (let i = 0; i < pix.length; i += 4) {
+				let all = pix[i] + pix[i + 1] + pix[i + 2];  // all is in range 0 - 255*3
+				data[j++] = scale * all / 3;
+			}
+			return data;
+		}
+
+		//letiables for ortographic camera
 		let viewHeight = 10;
 		let aspectRatio = window.innerWidth / window.innerHeight;
 
+		let cubi = [];
+		let cubiRiempiti = [];
 		function Start() {
 			scene = new THREE.Scene();
+			group = new THREE.Group();
 			camera = new THREE.OrthographicCamera(-aspectRatio * viewHeight / 2,
 				aspectRatio * viewHeight / 2, viewHeight / 2, -viewHeight / 2, -1000, 1000);
 
 			renderer = new THREE.WebGLRenderer({ antialias: true });
 			renderer.setSize(window.innerWidth, window.innerHeight);
-			// renderer.setClearColor(0x110100);
+			renderer.setClearColor(0x110100);
 			renderer.setPixelRatio(window.devicePixelRatio);
 			// renderer.gammaInput = true;
 			// renderer.gammaOutput = true;
-			// renderer.shadowMap.enabled = true;
+			renderer.shadowMap.enabled = true;
 			camera.position.set(2, 2, 2);
-
-			hemiLight = new THREE.HemisphereLight(0xff0000, 0x110101, 0.5);
-			hemiLight.position.set(0, 128, 0);
+			let geometry = new THREE.BoxGeometry(2, 2, 2);
+			hemiLight = new THREE.HemisphereLight(0xffffff, 0x110101, 2);
 			scene.add(hemiLight);
 
-			let dirLight = new THREE.DirectionalLight(0xff25aa, 0.3);
-			dirLight.color.setHSL(0.1, 1, 0.95);
-			dirLight.position.set(0, 3, 0);
-			dirLight.position.multiplyScalar(50);
-			scene.add(dirLight);
-			// dirLight.castShadow = false;
-			// dirLight.shadow.mapSize.width = 1024;
-			// dirLight.shadow.mapSize.height = 1024;
-
-			let light = new THREE.PointLight(0xff0000, 1);
-			light.position.set(0, 3.5, 0);
+			light = new THREE.PointLight(0xffffff, 1);
+			light.position.set(0, 45, 0);
+			light.castShadow = true;
 			scene.add(light);
 
-			let OBJFile = 'obj/vulcano.obj';
-			let MTLFile = 'obj/vulcano.mtl';
-			let PNGFile = 'textures/vulcano.png';
+			let topColor = [0, 0, 0];
+			let botColor = [66, 10, 9];
+			let material = new THREE.MeshLambertMaterial();
+			let num = 0;
+			let grid = 0;
 
-			new THREE.MTLLoader()
-				.load(MTLFile, function (materials) {
-					materials.preload();
-					new THREE.OBJLoader()
-						.setMaterials(materials)
-						.load(OBJFile, function (object) {
-							object.castShadow = true;
-							object.receiveShadow = true;
-							// object.position.y = 0;
-							let texture = new THREE.TextureLoader().load(PNGFile);
+			// terrain
+			let img = new Image();
+			img.src = "textures/heightmap.png";
+			img.onload = function () {
 
-							object.traverse(function (child) {   // aka setTexture
-								if (child instanceof THREE.Mesh) {
-									child.material.map = texture;
-									// child.castShadow = true;
-									// child.receiveShadow = true;
+				//get height data from img
+				let data = getHeightData(img, 1);
+				// load img source
+
+				let max = Math.max(...data);
+
+				let texture = THREE.ImageUtils.loadTexture('textures/heightmap.png');
+
+				//set height of vertices
+				for (let i = 0; i < Math.sqrt(data.length); i++) {
+					for (let j = 0; j < Math.sqrt(data.length); j++) {
+						material = new THREE.MeshLambertMaterial();
+						//interpolazione lineare dai cubi in basso a quelli in alto per colorare il vulcano
+						material.color = new THREE.Color("rgb(" +
+							Math.floor(botColor[0] + (data[i * Math.sqrt(data.length) + j]) * (topColor[0] - botColor[0]) / 255) + ", " +
+							Math.floor(botColor[1] + (data[i * Math.sqrt(data.length) + j]) * (topColor[1] - botColor[1]) / 255) + ", " +
+							Math.floor(botColor[2] + (data[i * Math.sqrt(data.length) + j]) * (topColor[2] - botColor[2]) / 255) + ")");
+
+						//push del cubo nel vettore 
+						cubi.push(new THREE.Mesh(geometry, material));
+						//posizionamento dell'ultimo cubo inserito su coordinate (i, i * sqrt(pximmagine) +j / 7, j)
+						cubi[cubi.length - 1].position.set(i, Math.floor(data[i * Math.sqrt(data.length) + j] / 7), j);
+
+						num = i * Math.sqrt(data.length) + j;
+						//totale dei cubi sugli assi
+						grid = Math.sqrt(data.length);
+						let alt = Math.floor(data[num]);
+						let latocubo = 1;
+						
+						//si cerca tra i cubi vicini su z e x quelli che non non hanno cubi sotto
+						if (Math.floor(data[num - grid]) < Math.floor(data[num]) || Math.floor(data[num + grid]) < Math.floor(data[num])
+							|| Math.floor(data[num - 1]) < Math.floor(data[num]) || Math.floor(data[num + 1]) < Math.floor(data[num])) {
+
+							//altezza tra cubi vicini
+							let diffAltezza = Math.min(
+								Math.floor(data[num - 1]),
+								Math.floor(data[num + 1]),
+								Math.floor(data[num - grid]),
+								Math.floor(data[num + grid])
+								);
+							material = new THREE.MeshLambertMaterial();
+							material.color = new THREE.Color("rgb(" +
+								Math.floor(botColor[0] + (data[i * Math.sqrt(data.length) + j]) * (topColor[0] - botColor[0]) / 255) + ", " +
+								Math.floor(botColor[1] + (data[i * Math.sqrt(data.length) + j]) * (topColor[1] - botColor[1]) / 255) + ", " +
+								Math.floor(botColor[2] + (data[i * Math.sqrt(data.length) + j]) * (topColor[2] - botColor[2]) / 255) + ")");
+							//si aggiungono i cubi
+							for (k = (diffAltezza); k < (alt - 1); k++) {
+								if (cubiRiempiti.length == 0) {
+									cube = new THREE.Mesh(geometry, material);
+									cube.position.set(i, Math.floor(k / 7), j);
+									cube.castShadow = true;
+									cube.receiveShadow = true;
+									cubiRiempiti.push(cube);
+									group.add(cube);
 								}
-							});
-							scene.add(object);
-						});
-				});
+							}
+						}
+
+						cubi[cubi.length - 1].castShadow = true;
+						cubi[cubi.length - 1].receiveShadow = true;
+						group.add(cubi[cubi.length - 1]);
+					}
+				}
+				group.scale.set(.1, .1, .1);
+				group.position.x = -3.2;
+				group.position.z = -3.2;
+				group.position.y = -1;
+
+				scene.add(group);
+
+			}
 
 			stats = new Stats();
-
-			clock = new THREE.Clock();
 			stats.domElement.style.position = 'absolute';
 			stats.domElement.style.top = '0px';
 
@@ -101,7 +180,7 @@
 			controls = new THREE.OrbitControls(camera, renderer.domElement);
 			controls.update();
 			controls.maxPolarAngle = Math.PI / 2 - 0.01;
-
+			clock = new THREE.Clock();
 		}
 
 
@@ -130,7 +209,7 @@
 
 				velocity: {
 					value: new THREE.Vector3(0, 15, 0),
-					spread: new THREE.Vector3(10, 10, 10)
+					spread: new THREE.Vector3(10, 0, 10)
 				},
 
 				color: {
@@ -138,7 +217,7 @@
 				},
 
 				size: {
-					value: 1
+					value: .5
 				},
 
 				particleCount: 2000
@@ -149,7 +228,7 @@
 
 		}
 
-		// Lightning variables
+		// Lightning letiables
 		let maxInterval = 5,
 			lightIntensity = 10;
 		let initTime = Date.now();
@@ -159,29 +238,29 @@
 
 		function getRandomBetweenTwoNumbers(min, max) {
 			min = Math.ceil(min);
-  			max = Math.floor(max);
-  			return Math.floor(Math.random() * (max - min + 1)) + min;
+			max = Math.floor(max);
+			return Math.floor(Math.random() * (max - min + 1)) + min;
 		}
 
 		function animate() {
 			requestAnimationFrame(animate);
 			time = Date.now();
 			interval = time - initTime;
-			if(Math.floor(interval / 1000) == timeNext) {
-				hemiLight.intensity = lightIntensity;
+			if (Math.floor(interval / 1000) == timeNext) {
+				light.intensity = lightIntensity;
 				scene.position.x = .1;
 				scene.position.z = -.1;
-				setTimeout(function() {
-					hemiLight.intensity = 1;
+				setTimeout(function () {
+					light.intensity = 1;
 					scene.position.x = 0;
 					scene.position.z = 0;
-					if(getRandomBetweenTwoNumbers(0, 1))
-						setTimeout(function() {
-							hemiLight.intensity = lightIntensity;
+					if (getRandomBetweenTwoNumbers(0, 1))
+						setTimeout(function () {
+							light.intensity = lightIntensity;
 							scene.position.x = -.1;
 							scene.position.z = .1;
-							setTimeout(function() {
-								hemiLight.intensity = 1;
+							setTimeout(function () {
+								light.intensity = 1;
 								scene.position.x = 0;
 								scene.position.z = 0;
 							}, 100);
