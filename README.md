@@ -1,7 +1,10 @@
-# Campedel - Nerelli | Creazione di un vulcano
+# Campedel - Nerelli | Creazione di un vulcano da Heightmap
 
-È stato creato un vulcano (vulcano.html) sfruttando MagicaVoxel per il modeling ed aggiungendo delle particles e un'interazione terremoto - luci per dare l'effetto di lampi.
+È stato creato un vulcano (vulcano.html) sfruttando una HeightMap del Vesuvio presa da <a href="https://tangrams.github.io/heightmapper/">"Tangram Heightmapper"</a>, sono state aggiunte delle particles usando <a href="https://github.com/squarefeet/ShaderParticleEngine">Shader Particle Engine</a> per l'effetto eruzione e un'interazione terremoto - luci per dare l'effetto di lampi.
+
+Heightmap usata:
+![heightmap vesuvio](textures/heightmap.png)
 
 ![animazione vulcano](Vulcano.gif)
 
-MagicaVoxel è stato usato per modellare il vulcano in fretta, in quanto permette di fare modellazione voxel rapidamente. Sono state aggiunte delle luci alla scena in modo che diano un effetto più drammatico.
+Il vulcano è colorato usando un'interpolazione lineare sull'altezza in cui si sceglie il colore della base del vulcano e la cima.

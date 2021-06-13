@@ -12,3 +12,5 @@ Sono state aggiunte le particles sfruttando la libreria ShaderParticleEngine (SP
 Sono state posizionate le particles perché eruttassero dal cratere. C'è però un problema: non è possibile ruotare la camera con gli OrbitControls.
 # Sistemato problema OrbitControls
 Dopo una lunga indagine, è stato realizzato che le particles fossero buggate a causa di questo listener: controls.addEventListener('change', Render);. Una volta rimpiazzato con una diversa istanziazione di controls, il problema della rotazione della camera con le particles è stato risolto.
+# Aggiornato progetto in modo che funzionasse con Heightmap
+Il progetto è stato aggiornato per funzionare con una Heightmap del vesuvio.
